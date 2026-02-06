@@ -3,7 +3,7 @@ import secrets
 
 _sessions = {}
 
-SESSION_TTL = 60
+SESSION_TTL = 300
 MAX_SESSIONS = 200
 
 

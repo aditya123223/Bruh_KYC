@@ -1,0 +1,18 @@
+[
+  {
+    "timestamp": "2026-02-07 00:25:35",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true
+  },
+  {
+    "timestamp": "2026-02-07 00:27:23",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true
+  }
+]

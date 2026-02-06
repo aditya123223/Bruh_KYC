@@ -29,7 +29,7 @@ function Result({ loading = true, message, videoPreview }) {
 
         {videoPreview && (
           <video
-            src="result.mp4"
+            src={videoPreview}
             autoPlay
             loop
             muted
