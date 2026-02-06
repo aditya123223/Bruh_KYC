@@ -16,7 +16,7 @@ import {
 import GeneralInfo from "./GeneralInfo.jsx";
 import VideoVerification from "./VideoVerification.jsx";
 import Result from "./Result.jsx";
-import { upload } from "./uploadApi";
+import { upload } from "../../Services/Upload.jsx";
 
 const steps = ["Identity Info", "Face Verification", "Confirmation"];
 
@@ -69,21 +69,28 @@ const KYC = () => {
     try {
       setLoading(true);
 
+      const sessionToken = localStorage.getItem("kycSessionToken");
+      if (!sessionToken) {
+        alert("Session expired. Please start KYC again.");
+        setLoading(false);
+        return;
+      }
+
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.name);
       formDataToSend.append("age", formData.age);
       formDataToSend.append("gender", formData.gender);
       formDataToSend.append("consent", consent);
       formDataToSend.append("faceImage", imageFile);
-      formDataToSend.append("verificationVideo", videoFile);
+      formDataToSend.append("video", videoFile); // backend expects "video"
+      formDataToSend.append("session_token", sessionToken); // pass session token
 
-      const response = await upload(formDataToSend);
-
+      const response = await upload(formDataToSend); // your upload API
       console.log("Server response:", response.data);
-      setResultData(response.data);
 
-      setLoading(false);
+      setResultData(response.data);
       setSubmitted(true);
+      setLoading(false);
     } catch (err) {
       console.error(err);
       setLoading(false);

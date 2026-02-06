@@ -1,9 +1,32 @@
 import Button from "@mui/material/Button";
 import { Typography, Stack } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import api from "../../Services/api"; // your axios instance
 
 function LeftSection() {
   const navigate = useNavigate();
+
+  const handleStartKYC = async () => {
+    try {
+      // Call backend /kyc/session to get a session token
+      const response = await api.get("/kyc/session", {
+        headers: {
+          "x-api-key": "YOUR_API_KEY_HERE", // if required
+        },
+      });
+
+      const sessionToken = response.data.session_token;
+
+      // Store session token in localStorage
+      localStorage.setItem("kycSessionToken", sessionToken);
+
+      // Navigate to KYC page
+      navigate("/KycDetails");
+    } catch (err) {
+      console.error("Failed to get session token", err);
+      alert("Unable to start KYC. Try again later.");
+    }
+  };
 
   return (
     <Stack spacing={3}>
@@ -29,7 +52,7 @@ function LeftSection() {
             textTransform: "none",
             fontSize: "1rem",
           }}
-          onClick={() => navigate("/KycDetails")}
+          onClick={handleStartKYC}
         >
           Do KYC
         </Button>
