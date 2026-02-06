@@ -32,7 +32,8 @@ function Result({ loading = true, message, videoPreview }) {
             src={videoPreview}
             autoPlay
             loop
-            muted
+            muted={loading}
+            controls={!loading}
             style={{
               width: "100%",
               height: "auto",

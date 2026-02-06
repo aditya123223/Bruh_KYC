@@ -16,12 +16,14 @@ import {
 import GeneralInfo from "./GeneralInfo.jsx";
 import VideoVerification from "./VideoVerification.jsx";
 import Result from "./Result.jsx";
+import { upload } from "./uploadApi";
 
 const steps = ["Identity Info", "Face Verification", "Confirmation"];
 
 const KYC = () => {
   const [activeStep, setActiveStep] = useState(0);
 
+  // Form fields
   const [formData, setFormData] = useState({ name: "", age: "", gender: "" });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -29,14 +31,18 @@ const KYC = () => {
   const [videoPreview, setVideoPreview] = useState(null);
   const [consent, setConsent] = useState(false);
 
+  // Submission state
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [resultData, setResultData] = useState(null); // store server response
 
+  // Handle text input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle image upload
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -47,29 +53,46 @@ const KYC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleVideoUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  // Handle video upload
+  const handleVideoUpload = (file, preview) => {
     setVideoFile(file);
-    setVideoPreview(URL.createObjectURL(file));
+    setVideoPreview(preview);
   };
 
+  // Check if user can move to step 2 or submit
   const canProceedStep1 =
     formData.name && formData.age && formData.gender && imageFile;
   const canSubmit = canProceedStep1 && videoFile && consent;
 
+  // Handle final submission
   const handleSubmit = async () => {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+      const formDataToSend = new FormData();
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("age", formData.age);
+      formDataToSend.append("gender", formData.gender);
+      formDataToSend.append("consent", consent);
+      formDataToSend.append("faceImage", imageFile);
+      formDataToSend.append("verificationVideo", videoFile);
+
+      const response = await upload(formDataToSend);
+
+      console.log("Server response:", response.data);
+      setResultData(response.data);
+
       setLoading(false);
-      setSubmitted(true); // mark KYC as submitted
-    }, 2000);
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+      alert("KYC submission failed");
+    }
   };
 
-  // Show Result component while submitting OR after submission
-  if (loading) {
+  // Show Result component while loading or after submission
+  if (loading)
     return (
       <Result
         loading={true}
@@ -77,17 +100,15 @@ const KYC = () => {
         videoPreview={videoPreview}
       />
     );
-  }
 
-  if (submitted) {
+  if (submitted)
     return (
       <Result
         loading={false}
-        message="KYC Submitted Successfully!"
+        message={resultData?.message || "KYC Submitted Successfully!"}
         videoPreview={videoPreview}
       />
     );
-  }
 
   return (
     <Box
@@ -109,6 +130,7 @@ const KYC = () => {
         }}
       >
         <CardContent sx={{ p: 4 }}>
+          {/* Stepper */}
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
             {steps.map((s) => (
               <Step key={s}>
@@ -137,6 +159,7 @@ const KYC = () => {
                   onImageUpload={handleImageUpload}
                 />
               )}
+
               {activeStep === 1 && (
                 <VideoVerification
                   videoPreview={videoPreview}
@@ -148,18 +171,23 @@ const KYC = () => {
 
           <Divider sx={{ my: 3 }} />
 
+          {/* Consent */}
           <FormControlLabel
             control={
               <Checkbox
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
-                sx={{ color: "#0070ba", "&.Mui-checked": { color: "#0070ba" } }}
+                sx={{
+                  color: "#0070ba",
+                  "&.Mui-checked": { color: "#0070ba" },
+                }}
               />
             }
             label="I confirm this identity belongs to me."
             sx={{ mb: 3 }}
           />
 
+          {/* Action Buttons */}
           <Box sx={{ textAlign: "center" }}>
             {activeStep < 1 ? (
               <Button
