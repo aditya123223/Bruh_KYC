@@ -1,7 +1,7 @@
 import numpy as np
 from app.db.vector_store import load_db
 
-SIM_THRESHOLD = 0.6
+SIM_THRESHOLD = 0.85
 
 
 def cosine_similarity(a, b):
@@ -44,6 +44,16 @@ def search_face(new_emb):
         return True, best_score
 
     return False, best_score
+
+def verify_identity_match(emb1, emb2, threshold=0.75):
+    """
+    Compare selfie vs video identity
+    """
+    score = cosine_similarity(emb1, emb2)
+
+    print("Identity match score:", score)
+
+    return score >= threshold, score
 
 
 

@@ -77,13 +77,14 @@ const KYC = () => {
       }
 
       const formDataToSend = new FormData();
-      formDataToSend.append("name", formData.name);
-      formDataToSend.append("age", formData.age);
-      formDataToSend.append("gender", formData.gender);
-      formDataToSend.append("consent", consent);
-      formDataToSend.append("faceImage", imageFile);
-      formDataToSend.append("video", videoFile); // backend expects "video"
-      formDataToSend.append("session_token", sessionToken); // pass session token
+
+      // ✅ EXACT backend field names
+      formDataToSend.append("session_token", sessionToken);
+      formDataToSend.append("image", imageFile);
+      formDataToSend.append("video", videoFile);
+
+      
+
 
       const response = await upload(formDataToSend); // your upload API
       console.log("Server response:", response.data);
@@ -108,14 +109,23 @@ const KYC = () => {
       />
     );
 
-  if (submitted)
-    return (
-      <Result
-        loading={false}
-        message={resultData?.message || "KYC Submitted Successfully!"}
-        videoPreview={videoPreview}
-      />
-    );
+  if (submitted) {
+  const isApproved = resultData?.status === "approved";
+
+  return (
+    <Result
+      loading={false}
+      message={
+        isApproved
+          ? "KYC approved successfully!"
+          : `KYC rejected: ${resultData?.reason || "verification failed"}`
+      }
+      success={isApproved}
+      videoPreview={videoPreview}
+    />
+  );
+}
+
 
   return (
     <Box

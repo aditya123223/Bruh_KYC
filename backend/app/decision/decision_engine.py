@@ -1,7 +1,7 @@
-def decide(liveness, duplicate):
+def decide(live, duplicate):
 
-    if not liveness:
-        return {"status": "rejected", "reason": "spoof suspected"}
+    if not live:
+        return {"status": "rejected", "reason": "liveness failed"}
 
     if duplicate:
         return {"status": "rejected", "reason": "duplicate identity"}

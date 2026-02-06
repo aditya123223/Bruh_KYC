@@ -14,5 +14,95 @@
     "reason": "approved",
     "duplicate": false,
     "liveness": true
+  },
+  {
+    "timestamp": "2026-02-07 01:23:00",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true
+  },
+  {
+    "timestamp": "2026-02-07 01:27:16",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true
+  },
+  {
+    "timestamp": "2026-02-07 01:30:53",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true
+  },
+  {
+    "timestamp": "2026-02-07 01:49:51",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "liveness failed"
+  },
+  {
+    "timestamp": "2026-02-07 01:56:09",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "liveness failed"
+  },
+  {
+    "timestamp": "2026-02-07 02:04:44",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 02:06:42",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "video too short"
+  },
+  {
+    "timestamp": "2026-02-07 02:08:45",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true,
+    "similarity": 0.764631986618042
+  },
+  {
+    "timestamp": "2026-02-07 02:25:51",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 02:28:00",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 02:31:58",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true,
+    "similarity": 0.7834376692771912
+  },
+  {
+    "timestamp": "2026-02-07 02:41:06",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 02:49:36",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
   }
 ]
