@@ -21,14 +21,15 @@ from app.db.vector_store import (
     reset_registry
 )
 
+from app.admin.attempt_logger import log_attempt
 from app.utils.logger import log
 
 router = APIRouter(prefix="/kyc", tags=["KYC"])
 
 
-# =============================
+# =====================================================
 # image reader
-# =============================
+# =====================================================
 
 async def read_image(upload: UploadFile):
     contents = await upload.read()
@@ -36,83 +37,166 @@ async def read_image(upload: UploadFile):
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
-# =============================
+# =====================================================
 # session route
-# =============================
+# =====================================================
 
 @router.get("/session")
 async def get_session(auth=Depends(verify_api_key)):
     return {"session_token": create_session()}
 
 
-# =============================
-# image verify
-# =============================
+# =====================================================
+# UNIFIED VERIFY (image + video)
+# =====================================================
 
 @router.post("/verify")
 async def verify(
     request: Request,
     session_token: str,
-    image1: UploadFile = File(...),
-    image2: UploadFile = File(...),
+    image: UploadFile = File(...),
+    video: UploadFile = File(...),
     auth=Depends(verify_api_key)
 ):
 
     try:
-        log("Image verification started")
+        log("Unified KYC verification started")
 
+        # --------------------
         # rate limit
+        # --------------------
         client_ip = request.client.host
         if not rate_limit(client_ip):
             return {"status": "error", "reason": "Too many requests"}
 
-        # session check
+        # --------------------
+        # session validation
+        # --------------------
         if not validate_session(session_token):
             return {"status": "error", "reason": "invalid session"}
 
-        frame1 = await read_image(image1)
-        frame2 = await read_image(image2)
+        # =================================================
+        # IMAGE → identity embedding
+        # =================================================
+        frame = await read_image(image)
 
-        if frame1 is None or frame2 is None:
+        if frame is None:
+            log_attempt({
+                "type": "kyc",
+                "status": "rejected",
+                "reason": "invalid image"
+            })
             return {"status": "rejected", "reason": "invalid image"}
 
-        pipeline_result = await asyncio.to_thread(
-            run_vision_pipeline,
-            frame1,
-            frame2
+        embedding = await asyncio.to_thread(
+            get_embedding,
+            frame
         )
 
-        if not pipeline_result["success"]:
-            return {
+        if embedding is None:
+            log_attempt({
+                "type": "kyc",
                 "status": "rejected",
-                "reason": pipeline_result["error"]
-            }
+                "reason": "encoding failed"
+            })
+            return {"status": "rejected", "reason": "encoding failed"}
 
-        embedding = pipeline_result["embedding"]
+        # =================================================
+        # VIDEO → liveness + deepfake checks
+        # =================================================
+        frames = await asyncio.to_thread(
+            extract_frames,
+            video
+        )
 
+        if not frames or len(frames) < 2:
+            log_attempt({
+                "type": "kyc",
+                "status": "rejected",
+                "reason": "video too short"
+            })
+            return {"status": "rejected", "reason": "not enough frames"}
+
+        risk = await asyncio.to_thread(
+            deepfake_risk,
+            frames
+        )
+
+        if risk > 1.2:
+            log_attempt({
+                "type": "kyc",
+                "status": "rejected",
+                "reason": "deepfake suspicion"
+            })
+            return {"status": "rejected", "reason": "deepfake suspicion"}
+
+        live_ok = False
+
+        for i in range(len(frames) - 1):
+
+            result = await asyncio.to_thread(
+                run_vision_pipeline,
+                frames[i],
+                frames[i + 1]
+            )
+
+            if result["success"]:
+                live_ok = result["liveness"]
+                break
+
+        if not live_ok:
+            log_attempt({
+                "type": "kyc",
+                "status": "rejected",
+                "reason": "liveness failed"
+            })
+            return {"status": "rejected", "reason": "liveness failed"}
+
+        # =================================================
+        # duplicate check
+        # =================================================
         duplicate = await asyncio.to_thread(
             check_duplicate,
             embedding
         )
 
         decision = decide(
-            pipeline_result["liveness"],
+            live_ok,
             duplicate
         )
 
         if decision["status"] == "approved":
-            store_face(frame2, embedding)
+            store_face(frame, embedding)
+
+        # =================================================
+        # audit logging
+        # =================================================
+        log_attempt({
+            "type": "kyc",
+            "status": decision["status"],
+            "reason": decision.get("reason", "approved"),
+            "duplicate": duplicate,
+            "liveness": live_ok
+        })
 
         return decision
 
     except Exception as e:
-        log(f"Verify error: {e}")
+
+        log(f"KYC verify error: {e}")
+
+        log_attempt({
+            "type": "kyc",
+            "status": "error",
+            "reason": "pipeline exception"
+        })
+
         return {"status": "error", "reason": "verification failed"}
 
 
-# =============================
-# search
-# =============================
+# =====================================================
+# SEARCH
+# =====================================================
 
 @router.post("/search")
 async def search(
@@ -152,84 +236,9 @@ async def search(
         return {"status": "error", "reason": "search failed"}
 
 
-# =============================
-# video verify
-# =============================
-
-@router.post("/verify-video")
-async def verify_video(
-    request: Request,
-    video: UploadFile = File(...),
-    auth=Depends(verify_api_key)
-):
-
-    try:
-        log("Video verification started")
-
-        client_ip = request.client.host
-        if not rate_limit(client_ip):
-            return {"status": "error", "reason": "Too many requests"}
-
-        frames = await asyncio.to_thread(
-            extract_frames,
-            video
-        )
-
-        if not frames or len(frames) < 2:
-            return {"status": "rejected", "reason": "not enough frames"}
-
-        risk = await asyncio.to_thread(
-            deepfake_risk,
-            frames
-        )
-
-        if risk > 1.2:
-            return {"status": "rejected", "reason": "deepfake suspicion"}
-
-        pipeline_result = None
-        selected_frame = None
-
-        for i in range(len(frames) - 1):
-
-            test = await asyncio.to_thread(
-                run_vision_pipeline,
-                frames[i],
-                frames[i + 1]
-            )
-
-            if test["success"]:
-                pipeline_result = test
-                selected_frame = frames[i + 1]
-                break
-
-        if pipeline_result is None:
-            return {"status": "rejected", "reason": "liveness failed"}
-
-        embedding = pipeline_result["embedding"]
-
-        duplicate = await asyncio.to_thread(
-            check_duplicate,
-            embedding
-        )
-
-        decision = decide(
-            pipeline_result["liveness"],
-            duplicate
-        )
-
-        if decision["status"] == "approved":
-            store_face(selected_frame, embedding)
-
-        return decision
-
-    except Exception as e:
-        log(f"Video error: {e}")
-        return {"status": "error", "reason": "video verification failed"}
-
-
-# =============================
-# registry
-# =============================
+# =====================================================
+# REGISTRY
+# =====================================================
 
 @router.get("/count")
 async def identity_count(auth=Depends(verify_api_key)):
