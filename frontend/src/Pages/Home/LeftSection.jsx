@@ -11,7 +11,7 @@ function LeftSection() {
       // Call backend /kyc/session to get a session token
       const response = await api.get("/kyc/session", {
         headers: {
-          "x-api-key": "YOUR_API_KEY_HERE", // if required
+          "x-api-key": "hackathon-demo-key", // if required
         },
       });
 

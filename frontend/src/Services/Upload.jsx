@@ -8,7 +8,7 @@ export const upload = async (formData) => {
     const response = await api.post("/kyc/verify-video", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
-        "x-api-key": sessionToken, // send to backend
+        "x-api-key": "hackathon-demo-key", // send to backend
       },
     });
 
