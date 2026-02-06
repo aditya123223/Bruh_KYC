@@ -129,5 +129,5 @@ def active_liveness_from_video(video_path):
 
 # ------------------ TEST ------------------
 if __name__ == "__main__":
-    result = active_liveness_from_video("C:/Users/vikram/OneDrive/Desktop/test/sample.mp4")
+    result = active_liveness_from_video("C:/Users/vikram/OneDrive/Desktop/test/sample4.mp4")
     print(result)
