@@ -29,10 +29,11 @@ function Result({ loading = true, message, videoPreview }) {
 
         {videoPreview && (
           <video
-            src="result.mp4"
+            src={videoPreview}
             autoPlay
             loop
-            muted
+            muted={loading}
+            controls={!loading}
             style={{
               width: "100%",
               height: "auto",

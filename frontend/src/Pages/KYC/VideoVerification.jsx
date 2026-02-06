@@ -8,7 +8,6 @@ const VideoVerification = ({ videoPreview, onVideoUpload }) => {
   const videoRef = useRef();
   const [stream, setStream] = useState(null);
 
-  // Clean up stream on unmount
   useEffect(() => {
     return () => {
       if (stream) {
@@ -23,6 +22,7 @@ const VideoVerification = ({ videoPreview, onVideoUpload }) => {
         video: { width: 1280, height: 720 },
         audio: true,
       });
+
       setStream(userStream);
       videoRef.current.srcObject = userStream;
       videoRef.current.play();
@@ -38,9 +38,8 @@ const VideoVerification = ({ videoPreview, onVideoUpload }) => {
       mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunksRef.current, { type: "video/mp4" });
         const videoURL = URL.createObjectURL(blob);
-        onVideoUpload({ target: { files: [blob], preview: videoURL } });
+        onVideoUpload(blob, videoURL);
 
-        // Stop all tracks
         userStream.getTracks().forEach((track) => track.stop());
         setStream(null);
       };
@@ -84,10 +83,10 @@ const VideoVerification = ({ videoPreview, onVideoUpload }) => {
       >
         <video
           ref={videoRef}
-          src={videoPreview || undefined} // if there's recorded video, play it
+          src={videoPreview || undefined}
           autoPlay
-          muted={!videoPreview} // mute live stream
-          controls={!!videoPreview} // show controls only for recorded video
+          muted={!videoPreview}
+          controls={!!videoPreview}
           playsInline
           style={{
             width: "100%",
@@ -99,11 +98,7 @@ const VideoVerification = ({ videoPreview, onVideoUpload }) => {
 
         {!recording && !videoPreview && (
           <Typography
-            sx={{
-              position: "absolute",
-              color: "#607d8b",
-              textAlign: "center",
-            }}
+            sx={{ position: "absolute", color: "#607d8b", textAlign: "center" }}
           >
             Tap "Start Recording" to capture your verification video
           </Typography>
@@ -119,7 +114,6 @@ const VideoVerification = ({ videoPreview, onVideoUpload }) => {
               backgroundColor: "#0070ba",
               "&:hover": { backgroundColor: "#005ea3" },
               color: "#fff",
-              textTransform: "none",
               py: 1.5,
               borderRadius: 2,
             }}
@@ -134,7 +128,6 @@ const VideoVerification = ({ videoPreview, onVideoUpload }) => {
               backgroundColor: "#d32f2f",
               "&:hover": { backgroundColor: "#b71c1c" },
               color: "#fff",
-              textTransform: "none",
               py: 1.5,
               borderRadius: 2,
             }}
