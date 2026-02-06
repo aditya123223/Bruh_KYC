@@ -52,5 +52,6 @@ def deepfake_risk(frames):
     print("Landmark jitter:", jitter)
     print("Risk score:", risk)
 
-    return min(risk, 1.0)
+    return float(np.clip(risk, 0, 1))
+
 

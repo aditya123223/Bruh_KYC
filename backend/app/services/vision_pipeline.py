@@ -20,10 +20,21 @@ def run_vision_pipeline(frame1, frame2):
     """
 
     # --- Image quality check (stub but future-proof)
-    if not check_image_quality(frame1) or not check_image_quality(frame2):
+    valid1, reason1 = check_image_quality(frame1)
+    valid2, reason2 = check_image_quality(frame2)
+
+    if not valid1:
         return {
             "success": False,
-            "error": "image too blurry",
+            "error": f"image1: {reason1}",
+            "liveness": False,
+            "embedding": None
+        }
+
+    if not valid2:
+        return {
+            "success": False,
+            "error": f"image2: {reason2}",
             "liveness": False,
             "embedding": None
         }

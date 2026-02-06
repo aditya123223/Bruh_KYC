@@ -1,8 +1,7 @@
-# backend/app/api/kyc.py
-
 from fastapi import APIRouter, UploadFile, File
 import numpy as np
 import cv2
+import asyncio
 
 from app.services.embedding import get_embedding
 from app.services.similarity import search_face, check_duplicate
@@ -23,18 +22,19 @@ from app.utils.logger import log
 router = APIRouter(prefix="/kyc", tags=["KYC"])
 
 
-# =====================================================
-# helper — convert upload → OpenCV frame
-# =====================================================
+# =============================
+# async image reader (SAFE)
+# =============================
 
-def read_image(upload: UploadFile):
-    file_bytes = np.frombuffer(upload.file.read(), np.uint8)
-    return cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+async def read_image(upload: UploadFile):
+    contents = await upload.read()
+    arr = np.frombuffer(contents, np.uint8)
+    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
-# =====================================================
-# IMAGE VERIFY (2-image pipeline)
-# =====================================================
+# =============================
+# IMAGE VERIFY
+# =============================
 
 @router.post("/verify")
 async def verify(image1: UploadFile = File(...),
@@ -43,13 +43,17 @@ async def verify(image1: UploadFile = File(...),
     try:
         log("Image verification started")
 
-        frame1 = read_image(image1)
-        frame2 = read_image(image2)
+        frame1 = await read_image(image1)
+        frame2 = await read_image(image2)
 
         if frame1 is None or frame2 is None:
             return {"status": "rejected", "reason": "invalid image"}
 
-        pipeline_result = run_vision_pipeline(frame1, frame2)
+        pipeline_result = await asyncio.to_thread(
+            run_vision_pipeline,
+            frame1,
+            frame2
+        )
 
         if not pipeline_result["success"]:
             return {
@@ -57,9 +61,12 @@ async def verify(image1: UploadFile = File(...),
                 "reason": pipeline_result["error"]
             }
 
-        embedding = pipeline_result["embedding"]
+        embedding = pipeline_result.get("embedding")
 
-        duplicate = check_duplicate(embedding)
+        if embedding is None:
+            return {"status": "error", "reason": "embedding failure"}
+
+        duplicate = await asyncio.to_thread(check_duplicate, embedding)
 
         decision = decide(
             pipeline_result["liveness"],
@@ -76,9 +83,9 @@ async def verify(image1: UploadFile = File(...),
         return {"status": "error", "reason": "verification failed"}
 
 
-# =====================================================
-# SEARCH IDENTITY
-# =====================================================
+# =============================
+# SEARCH
+# =============================
 
 @router.post("/search")
 async def search(image: UploadFile = File(...)):
@@ -86,20 +93,17 @@ async def search(image: UploadFile = File(...)):
     try:
         log("Identity search started")
 
-        frame = read_image(image)
+        frame = await read_image(image)
 
         if frame is None:
             return {"status": "error", "reason": "invalid image"}
 
-        embedding = get_embedding(frame)
+        embedding = await asyncio.to_thread(get_embedding, frame)
 
         if embedding is None:
-            return {
-                "status": "rejected",
-                "reason": "encoding failed"
-            }
+            return {"status": "rejected", "reason": "encoding failed"}
 
-        match, score = search_face(embedding)
+        match, score = await asyncio.to_thread(search_face, embedding)
 
         if match:
             return {
@@ -117,9 +121,9 @@ async def search(image: UploadFile = File(...)):
         return {"status": "error", "reason": "search failed"}
 
 
-# =====================================================
-# VIDEO VERIFY (deepfake → liveness → duplicate)
-# =====================================================
+# =============================
+# VIDEO VERIFY
+# =============================
 
 @router.post("/verify-video")
 async def verify_video(video: UploadFile = File(...)):
@@ -127,36 +131,26 @@ async def verify_video(video: UploadFile = File(...)):
     try:
         log("Video verification started")
 
-        frames = extract_frames(video)
+        frames = await asyncio.to_thread(extract_frames, video)
 
-        if len(frames) < 2:
-            return {
-                "status": "rejected",
-                "reason": "not enough frames"
-            }
+        if not frames or len(frames) < 2:
+            return {"status": "rejected", "reason": "not enough frames"}
 
-        # -------------------------
-        # deepfake heuristic
-        # -------------------------
-        risk = deepfake_risk(frames)
-
-        log(f"Deepfake risk score: {risk}")
+        risk = await asyncio.to_thread(deepfake_risk, frames)
 
         if risk > 1.2:
-            return {
-                "status": "rejected",
-                "reason": "deepfake suspicion"
-            }
+            return {"status": "rejected", "reason": "deepfake suspicion"}
 
-        # -------------------------
-        # liveness + pipeline
-        # -------------------------
         pipeline_result = None
         selected_frame = None
 
         for i in range(len(frames) - 1):
 
-            test = run_vision_pipeline(frames[i], frames[i + 1])
+            test = await asyncio.to_thread(
+                run_vision_pipeline,
+                frames[i],
+                frames[i + 1]
+            )
 
             if test["success"]:
                 pipeline_result = test
@@ -164,14 +158,14 @@ async def verify_video(video: UploadFile = File(...)):
                 break
 
         if pipeline_result is None:
-            return {
-                "status": "rejected",
-                "reason": "liveness failed"
-            }
+            return {"status": "rejected", "reason": "liveness failed"}
 
-        embedding = pipeline_result["embedding"]
+        embedding = pipeline_result.get("embedding")
 
-        duplicate = check_duplicate(embedding)
+        if embedding is None:
+            return {"status": "error", "reason": "embedding failure"}
+
+        duplicate = await asyncio.to_thread(check_duplicate, embedding)
 
         decision = decide(
             pipeline_result["liveness"],
@@ -188,9 +182,9 @@ async def verify_video(video: UploadFile = File(...)):
         return {"status": "error", "reason": "video verification failed"}
 
 
-# =====================================================
-# REGISTRY ENDPOINTS
-# =====================================================
+# =============================
+# REGISTRY
+# =============================
 
 @router.get("/count")
 async def identity_count():
