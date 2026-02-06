@@ -1,5 +1,9 @@
 # backend/app/api/kyc.py
 
+from app.services.active_liveness import active_liveness_from_video
+import tempfile
+import os
+
 from fastapi import APIRouter, UploadFile, File
 import numpy as np
 import cv2
@@ -125,67 +129,98 @@ async def search(image: UploadFile = File(...)):
 async def verify_video(video: UploadFile = File(...)):
 
     try:
-        log("Video verification started")
+        log("Layered video verification started")
 
-        frames = extract_frames(video)
+        # --------------------------------
+        # save temp video for active liveness
+        # --------------------------------
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(video.file.read())
+            video_path = tmp.name
+
+        # --------------------------------
+        # frame extraction (FIXED)
+        # --------------------------------
+        frames = extract_frames(video_path)
 
         if len(frames) < 2:
+            os.remove(video_path)
             return {
                 "status": "rejected",
                 "reason": "not enough frames"
             }
 
-        # -------------------------
-        # deepfake heuristic
-        # -------------------------
+        # --------------------------------
+        # 1️⃣ PASSIVE liveness gate
+        # --------------------------------
+        passive_result = None
+        selected_frame = None
+
+        for i in range(len(frames) - 1):
+            test = run_vision_pipeline(frames[i], frames[i + 1])
+            if test["success"]:
+                passive_result = test
+                selected_frame = frames[i + 1]
+                break
+
+        if passive_result is None:
+            os.remove(video_path)
+            return {
+                "status": "rejected",
+                "reason": "passive liveness failed"
+            }
+
+        # --------------------------------
+        # 2️⃣ ACTIVE behavioral liveness
+        # --------------------------------
+        active = active_liveness_from_video(video_path)
+
+        os.remove(video_path)
+
+        if not active.get("is_live", False):
+            return {
+                "status": "rejected",
+                "reason": "active liveness failed",
+                "confidence": active.get("confidence", 0)
+            }
+
+        # --------------------------------
+        # 3️⃣ deepfake heuristic
+        # --------------------------------
         risk = deepfake_risk(frames)
 
-        log(f"Deepfake risk score: {risk}")
-
-        if risk > 1.2:
+        if risk > 1.2:   # demo-safe threshold
             return {
                 "status": "rejected",
                 "reason": "deepfake suspicion"
             }
 
-        # -------------------------
-        # liveness + pipeline
-        # -------------------------
-        pipeline_result = None
-        selected_frame = None
-
-        for i in range(len(frames) - 1):
-
-            test = run_vision_pipeline(frames[i], frames[i + 1])
-
-            if test["success"]:
-                pipeline_result = test
-                selected_frame = frames[i + 1]
-                break
-
-        if pipeline_result is None:
-            return {
-                "status": "rejected",
-                "reason": "liveness failed"
-            }
-
-        embedding = pipeline_result["embedding"]
+        # --------------------------------
+        # 4️⃣ identity embedding
+        # --------------------------------
+        embedding = passive_result["embedding"]
 
         duplicate = check_duplicate(embedding)
 
         decision = decide(
-            pipeline_result["liveness"],
+            passive_result["liveness"],
             duplicate
         )
 
         if decision["status"] == "approved":
             store_face(selected_frame, embedding)
 
+        # attach liveness metrics for demo
+        decision["active_confidence"] = active["confidence"]
+
         return decision
 
     except Exception as e:
-        log(f"Video error: {e}")
-        return {"status": "error", "reason": "video verification failed"}
+        log(f"Video pipeline error: {str(e)}")
+        return {
+            "status": "error",
+            "reason": "verification pipeline failure"
+        }
 
 
 # =====================================================
