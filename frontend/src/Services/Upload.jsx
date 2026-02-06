@@ -5,7 +5,7 @@ export const upload = async (formData) => {
     // Get session token from FormData
     const sessionToken = formData.get("session_token"); // FormData method
 
-    const response = await api.post("/kyc/verify-video", formData, {
+    const response = await api.post("/kyc/verify", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         "x-api-key": "hackathon-demo-key", // send to backend
