@@ -5,11 +5,7 @@ import Navbar from "./navbar";
 function Home() {
   return (
     <>
-      <Navbar />
-
       <Hero />
-
-      <Footer />
     </>
   );
 }

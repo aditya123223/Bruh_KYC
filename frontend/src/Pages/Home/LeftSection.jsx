@@ -1,7 +1,10 @@
 import Button from "@mui/material/Button";
 import { Typography, Stack } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 function LeftSection() {
+  const navigate = useNavigate();
+
   return (
     <Stack spacing={3}>
       <Typography variant="h3" fontWeight={700}>
@@ -26,6 +29,7 @@ function LeftSection() {
             textTransform: "none",
             fontSize: "1rem",
           }}
+          onClick={() => navigate("/KycDetails")}
         >
           Do KYC
         </Button>

@@ -5,6 +5,7 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import Box from "@mui/material/Box";
+import { Link } from "react-router-dom";
 
 function Navbar() {
   return (
@@ -12,7 +13,7 @@ function Navbar() {
       position="sticky"
       elevation={3}
       sx={{
-        backgroundColor: "#22a4fb",
+        backgroundColor: "#0070ba",
       }}
     >
       <Toolbar className="container">
@@ -35,7 +36,9 @@ function Navbar() {
             letterSpacing: 0.5,
           }}
         >
-          KYC Verification
+          <Link to="/" style={{ color: "white", textDecoration: "none" }}>
+            KYC Verification
+          </Link>
         </Typography>
 
         {/* Desktop Nav */}
