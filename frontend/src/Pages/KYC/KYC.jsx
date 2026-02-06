@@ -4,69 +4,90 @@ import {
   Card,
   CardContent,
   Typography,
-  TextField,
-  Button,
-  MenuItem,
   Grid,
   Stepper,
   Step,
   StepLabel,
+  Button,
   Checkbox,
   FormControlLabel,
-  Alert,
   Divider,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import GeneralInfo from "./GeneralInfo.jsx";
+import VideoVerification from "./VideoVerification.jsx";
+import Result from "./Result.jsx";
 
 const steps = ["Identity Info", "Face Verification", "Confirmation"];
 
 const KYC = () => {
-  const navigate = useNavigate();
+  const [activeStep, setActiveStep] = useState(0);
 
-  const [formData, setFormData] = useState({
-    name: "",
-    age: "",
-    gender: "",
-  });
-
-  const [preview, setPreview] = useState(null);
+  const [formData, setFormData] = useState({ name: "", age: "", gender: "" });
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [videoFile, setVideoFile] = useState(null);
+  const [videoPreview, setVideoPreview] = useState(null);
   const [consent, setConsent] = useState(false);
 
-  // -------------------------
-  // handlers
-  // -------------------------
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setImageFile(file);
 
     const reader = new FileReader();
-    reader.onloadend = () => setPreview(reader.result);
+    reader.onloadend = () => setImagePreview(reader.result);
     reader.readAsDataURL(file);
   };
 
-  const isFormValid =
-    formData.name &&
-    formData.age &&
-    formData.gender &&
-    preview &&
-    consent;
-
-  const handleProceed = () => {
-    if (!isFormValid) return;
-
-    // navigate to webcam verification page
-    navigate("/verify-camera");
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
   };
 
-  // -------------------------
-  // UI
-  // -------------------------
+  const canProceedStep1 =
+    formData.name && formData.age && formData.gender && imageFile;
+  const canSubmit = canProceedStep1 && videoFile && consent;
+
+  const handleSubmit = async () => {
+    setLoading(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false);
+      setSubmitted(true); // mark KYC as submitted
+    }, 2000);
+  };
+
+  // Show Result component while submitting OR after submission
+  if (loading) {
+    return (
+      <Result
+        loading={true}
+        message="Submitting your KYC..."
+        videoPreview={videoPreview}
+      />
+    );
+  }
+
+  if (submitted) {
+    return (
+      <Result
+        loading={false}
+        message="KYC Submitted Successfully!"
+        videoPreview={videoPreview}
+      />
+    );
+  }
 
   return (
     <Box
@@ -76,161 +97,104 @@ const KYC = () => {
         justifyContent: "center",
         alignItems: "center",
         background: "linear-gradient(135deg, #eef2ff, #f8fafc)",
-        padding: 3,
+        p: 3,
       }}
     >
-      <Card sx={{ width: "100%", maxWidth: 1100, borderRadius: 4, boxShadow: 6 }}>
-        <CardContent>
-
-          {/* Step indicator */}
-          <Stepper activeStep={0} sx={{ mb: 3 }}>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
+      <Card
+        sx={{
+          maxWidth: 600,
+          width: "100%",
+          borderRadius: 3,
+          boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+        }}
+      >
+        <CardContent sx={{ p: 4 }}>
+          <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
+            {steps.map((s) => (
+              <Step key={s}>
+                <StepLabel>{s}</StepLabel>
               </Step>
             ))}
           </Stepper>
 
-          <Typography variant="h4" align="center" fontWeight="bold" gutterBottom>
+          <Typography
+            variant="h5"
+            align="center"
+            fontWeight={600}
+            gutterBottom
+            sx={{ mb: 3 }}
+          >
             KYC Identity Enrollment
           </Typography>
 
-          {/* Fraud warning */}
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Duplicate or spoof identity attempts will be automatically rejected.
-          </Alert>
-
-          <Grid container spacing={4}>
-
-            {/* LEFT — FORM */}
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-
-                <TextField
-                  label="Full Name"
-                  name="name"
-                  value={formData.name}
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              {activeStep === 0 && (
+                <GeneralInfo
+                  formData={formData}
                   onChange={handleChange}
-                  fullWidth
-                  required
+                  imagePreview={imagePreview}
+                  onImageUpload={handleImageUpload}
                 />
-
-                <TextField
-                  label="Age"
-                  name="age"
-                  type="number"
-                  value={formData.age}
-                  onChange={handleChange}
-                  fullWidth
-                  required
+              )}
+              {activeStep === 1 && (
+                <VideoVerification
+                  videoPreview={videoPreview}
+                  onVideoUpload={handleVideoUpload}
                 />
-
-                <TextField
-                  select
-                  label="Gender"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  fullWidth
-                  required
-                >
-                  <MenuItem value="">Select</MenuItem>
-                  <MenuItem value="Male">Male</MenuItem>
-                  <MenuItem value="Female">Female</MenuItem>
-                  <MenuItem value="Other">Other</MenuItem>
-                </TextField>
-
-                <Button variant="outlined" component="label">
-                  Upload Face Image
-                  <input hidden type="file" accept="image/*" onChange={handleImageUpload} />
-                </Button>
-
-                {/* consent */}
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={consent}
-                      onChange={(e) => setConsent(e.target.checked)}
-                    />
-                  }
-                  label="I confirm this identity belongs to me."
-                />
-
-              </Box>
-            </Grid>
-
-            {/* RIGHT — PREVIEW + INSTRUCTIONS */}
-            <Grid item xs={12} md={6}>
-
-              {/* image preview */}
-              <Box
-                sx={{
-                  height: 250,
-                  border: "2px dashed #ccc",
-                  borderRadius: 3,
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  backgroundColor: "#fafafa",
-                  mb: 2,
-                }}
-              >
-                {preview ? (
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8 }}
-                  />
-                ) : (
-                  <Typography color="text.secondary">
-                    Uploaded face preview
-                  </Typography>
-                )}
-              </Box>
-
-              <Divider sx={{ mb: 2 }} />
-
-              {/* capture instructions */}
-              <Typography variant="h6" gutterBottom>
-                Verification Instructions
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                • Ensure good lighting  
-                • Remove glasses/hats  
-                • Face centered in camera  
-                • Follow blink/head prompts  
-                • Stay still during verification
-              </Typography>
-
+              )}
             </Grid>
           </Grid>
 
-          {/* identity summary */}
           <Divider sx={{ my: 3 }} />
 
-          <Typography variant="h6">Identity Summary</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Name: {formData.name || "-"}  
-            <br />
-            Age: {formData.age || "-"}  
-            <br />
-            Gender: {formData.gender || "-"}
-          </Typography>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                sx={{ color: "#0070ba", "&.Mui-checked": { color: "#0070ba" } }}
+              />
+            }
+            label="I confirm this identity belongs to me."
+            sx={{ mb: 3 }}
+          />
 
-          {/* proceed button */}
-          <Box sx={{ mt: 3, textAlign: "center" }}>
-            <Button
-              variant="contained"
-              size="large"
-              disabled={!isFormValid}
-              onClick={handleProceed}
-              sx={{ borderRadius: 2, fontWeight: "bold" }}
-            >
-              Proceed to Face Verification
-            </Button>
+          <Box sx={{ textAlign: "center" }}>
+            {activeStep < 1 ? (
+              <Button
+                variant="contained"
+                disabled={!canProceedStep1}
+                onClick={() => setActiveStep(1)}
+                sx={{
+                  backgroundColor: "#0070ba",
+                  "&:hover": { backgroundColor: "#005ea3" },
+                  textTransform: "none",
+                  py: 1.5,
+                  px: 5,
+                  borderRadius: 2,
+                }}
+              >
+                Continue
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                disabled={!canSubmit}
+                onClick={handleSubmit}
+                sx={{
+                  backgroundColor: "#0070ba",
+                  "&:hover": { backgroundColor: "#005ea3" },
+                  textTransform: "none",
+                  py: 1.5,
+                  px: 5,
+                  borderRadius: 2,
+                }}
+              >
+                Submit KYC
+              </Button>
+            )}
           </Box>
-
         </CardContent>
       </Card>
     </Box>
@@ -238,4 +202,3 @@ const KYC = () => {
 };
 
 export default KYC;
-

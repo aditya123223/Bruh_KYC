@@ -26,9 +26,9 @@ from app.utils.logger import log
 router = APIRouter(prefix="/kyc", tags=["KYC"])
 
 
-# =====================================================
-# async image reader
-# =====================================================
+# =============================
+# image reader
+# =============================
 
 async def read_image(upload: UploadFile):
     contents = await upload.read()
@@ -36,18 +36,18 @@ async def read_image(upload: UploadFile):
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
-# =====================================================
-# SESSION ROUTE
-# =====================================================
+# =============================
+# session route
+# =============================
 
 @router.get("/session")
 async def get_session(auth=Depends(verify_api_key)):
     return {"session_token": create_session()}
 
 
-# =====================================================
-# IMAGE VERIFY
-# =====================================================
+# =============================
+# image verify
+# =============================
 
 @router.post("/verify")
 async def verify(
@@ -61,30 +61,21 @@ async def verify(
     try:
         log("Image verification started")
 
-        # ---- rate limit ----
+        # rate limit
         client_ip = request.client.host
-
         if not rate_limit(client_ip):
-            return {
-                "status": "error",
-                "reason": "Too many requests — slow down"
-            }
+            return {"status": "error", "reason": "Too many requests"}
 
-        # ---- session validation ----
+        # session check
         if not validate_session(session_token):
-            return {
-                "status": "error",
-                "reason": "invalid or expired session"
-            }
+            return {"status": "error", "reason": "invalid session"}
 
-        # ---- read images ----
         frame1 = await read_image(image1)
         frame2 = await read_image(image2)
 
         if frame1 is None or frame2 is None:
             return {"status": "rejected", "reason": "invalid image"}
 
-        # ---- pipeline ----
         pipeline_result = await asyncio.to_thread(
             run_vision_pipeline,
             frame1,
@@ -97,12 +88,8 @@ async def verify(
                 "reason": pipeline_result["error"]
             }
 
-        embedding = pipeline_result.get("embedding")
+        embedding = pipeline_result["embedding"]
 
-        if embedding is None:
-            return {"status": "error", "reason": "embedding failure"}
-
-        # ---- duplicate check ----
         duplicate = await asyncio.to_thread(
             check_duplicate,
             embedding
@@ -113,7 +100,6 @@ async def verify(
             duplicate
         )
 
-        # ---- storage ----
         if decision["status"] == "approved":
             store_face(frame2, embedding)
 
@@ -121,15 +107,12 @@ async def verify(
 
     except Exception as e:
         log(f"Verify error: {e}")
-        return {
-            "status": "error",
-            "reason": "verification failed"
-        }
+        return {"status": "error", "reason": "verification failed"}
 
 
-# =====================================================
-# SEARCH
-# =====================================================
+# =============================
+# search
+# =============================
 
 @router.post("/search")
 async def search(
@@ -138,14 +121,12 @@ async def search(
 ):
 
     try:
-        log("Identity search started")
-
         frame = await read_image(image)
 
-        if frame is None:
-            return {"status": "error", "reason": "invalid image"}
-
-        embedding = await asyncio.to_thread(get_embedding, frame)
+        embedding = await asyncio.to_thread(
+            get_embedding,
+            frame
+        )
 
         if embedding is None:
             return {"status": "rejected", "reason": "encoding failed"}
@@ -171,9 +152,9 @@ async def search(
         return {"status": "error", "reason": "search failed"}
 
 
-# =====================================================
-# VIDEO VERIFY
-# =====================================================
+# =============================
+# video verify
+# =============================
 
 @router.post("/verify-video")
 async def verify_video(
@@ -185,23 +166,22 @@ async def verify_video(
     try:
         log("Video verification started")
 
-        # ---- rate limit ----
         client_ip = request.client.host
-
         if not rate_limit(client_ip):
-            return {
-                "status": "error",
-                "reason": "Too many requests — slow down"
-            }
+            return {"status": "error", "reason": "Too many requests"}
 
-        # ---- extract frames ----
-        frames = await asyncio.to_thread(extract_frames, video)
+        frames = await asyncio.to_thread(
+            extract_frames,
+            video
+        )
 
         if not frames or len(frames) < 2:
             return {"status": "rejected", "reason": "not enough frames"}
 
-        # ---- deepfake check ----
-        risk = await asyncio.to_thread(deepfake_risk, frames)
+        risk = await asyncio.to_thread(
+            deepfake_risk,
+            frames
+        )
 
         if risk > 1.2:
             return {"status": "rejected", "reason": "deepfake suspicion"}
@@ -225,10 +205,7 @@ async def verify_video(
         if pipeline_result is None:
             return {"status": "rejected", "reason": "liveness failed"}
 
-        embedding = pipeline_result.get("embedding")
-
-        if embedding is None:
-            return {"status": "error", "reason": "embedding failure"}
+        embedding = pipeline_result["embedding"]
 
         duplicate = await asyncio.to_thread(
             check_duplicate,
@@ -250,9 +227,9 @@ async def verify_video(
         return {"status": "error", "reason": "video verification failed"}
 
 
-# =====================================================
-# REGISTRY
-# =====================================================
+# =============================
+# registry
+# =============================
 
 @router.get("/count")
 async def identity_count(auth=Depends(verify_api_key)):
