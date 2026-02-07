@@ -3,7 +3,7 @@ import api from "./api";
 export const upload = async (formData) => {
   try {
     // Get session token from FormData
-    const sessionToken = formData.get("session_token"); // FormData method
+    // const sessionToken = formData.get("session_token"); // FormData method
 
     const response = await api.post("/kyc/verify", formData, {
       headers: {
