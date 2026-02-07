@@ -83,9 +83,6 @@ const KYC = () => {
       formDataToSend.append("image", imageFile);
       formDataToSend.append("video", videoFile);
 
-      
-
-
       const response = await upload(formDataToSend); // your upload API
       console.log("Server response:", response.data);
 
@@ -102,30 +99,25 @@ const KYC = () => {
   // Show Result component while loading or after submission
   if (loading)
     return (
-      <Result
-        loading={true}
-        message="Submitting your KYC..."
-        videoPreview={videoPreview}
-      />
+      <Result loading={true} message={resultData} videoPreview={videoPreview} />
     );
 
   if (submitted) {
-  const isApproved = resultData?.status === "approved";
+    const isApproved = resultData?.status === "approved";
 
-  return (
-    <Result
-      loading={false}
-      message={
-        isApproved
-          ? "KYC approved successfully!"
-          : `KYC rejected: ${resultData?.reason || "verification failed"}`
-      }
-      success={isApproved}
-      videoPreview={videoPreview}
-    />
-  );
-}
-
+    return (
+      <Result
+        loading={false}
+        message={
+          isApproved
+            ? "KYC approved successfully!"
+            : `KYC rejected: ${resultData?.reason || "verification failed"}`
+        }
+        success={isApproved}
+        videoPreview={videoPreview}
+      />
+    );
+  }
 
   return (
     <Box

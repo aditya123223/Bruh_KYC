@@ -29,11 +29,10 @@ function Result({ loading = true, message, videoPreview }) {
 
         {videoPreview && (
           <video
-            src={videoPreview}
+            src="result.mp4"
             autoPlay
             loop
             muted={loading}
-            controls={!loading}
             style={{
               width: "100%",
               height: "auto",
@@ -53,9 +52,19 @@ function Result({ loading = true, message, videoPreview }) {
         )}
 
         {!loading && (
-          <Typography variant="body1" sx={{ mt: 2 }}>
-            KYC submitted successfully!
-          </Typography>
+          <div>
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              KYC submitted successfully!
+            </Typography>
+            <br />
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              {message.status}
+            </Typography>
+            <br />
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              {message.reason}
+            </Typography>
+          </div>
         )}
       </Card>
     </Box>
