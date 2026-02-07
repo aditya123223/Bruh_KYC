@@ -104,5 +104,69 @@
     "type": "kyc",
     "status": "rejected",
     "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 07:05:28",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "liveness failed"
+  },
+  {
+    "timestamp": "2026-02-07 07:07:24",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 07:19:43",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 08:29:55",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch"
+  },
+  {
+    "timestamp": "2026-02-07 09:02:36",
+    "type": "kyc",
+    "status": "error",
+    "reason": "pipeline exception"
+  },
+  {
+    "timestamp": "2026-02-07 09:05:59",
+    "type": "kyc",
+    "status": "error",
+    "reason": "pipeline exception"
+  },
+  {
+    "timestamp": "2026-02-07 09:11:10",
+    "type": "kyc",
+    "status": "error",
+    "reason": "pipeline exception"
+  },
+  {
+    "timestamp": "2026-02-07 09:13:01",
+    "type": "kyc",
+    "status": "error",
+    "reason": "pipeline exception"
+  },
+  {
+    "timestamp": "2026-02-07 09:21:32",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.018230218440294266
+  },
+  {
+    "timestamp": "2026-02-07 09:22:09",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true,
+    "similarity": 0.8262697458267212
   }
 ]
