@@ -1,0 +1,239 @@
+[
+  {
+    "timestamp": "2026-02-07 09:30:31",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": -0.0036973641254007816
+  },
+  {
+    "timestamp": "2026-02-07 09:32:18",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true,
+    "similarity": 0.7555971145629883
+  },
+  {
+    "timestamp": "2026-02-07 09:34:54",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true,
+    "similarity": 0.7756522297859192
+  },
+  {
+    "timestamp": "2026-02-07 09:49:29",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": -0.06529723107814789
+  },
+  {
+    "timestamp": "2026-02-07 09:51:46",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.6647053360939026
+  },
+  {
+    "timestamp": "2026-02-07 09:54:52",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "liveness failed",
+    "metrics": {
+      "is_live": false,
+      "confidence": 0.38,
+      "blink_count": 0,
+      "head_movement": 1.05,
+      "motion_jitter": 0.883,
+      "mouth_variance": 2.84,
+      "frames_processed": 100
+    }
+  },
+  {
+    "timestamp": "2026-02-07 09:56:33",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.13638730347156525
+  },
+  {
+    "timestamp": "2026-02-07 09:57:54",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "liveness failed",
+    "metrics": {
+      "is_live": false,
+      "confidence": 0.38,
+      "blink_count": 1,
+      "head_movement": 0.83,
+      "motion_jitter": 0.669,
+      "mouth_variance": 0.48,
+      "frames_processed": 166
+    }
+  },
+  {
+    "timestamp": "2026-02-07 10:01:02",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true,
+    "similarity": 0.8263325691223145
+  },
+  {
+    "timestamp": "2026-02-07 10:04:55",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "liveness failed",
+    "metrics": {
+      "is_live": false,
+      "confidence": 0.37,
+      "blink_count": 1,
+      "head_movement": 1.07,
+      "motion_jitter": 0.405,
+      "mouth_variance": 0.89,
+      "frames_processed": 180
+    }
+  },
+  {
+    "timestamp": "2026-02-07 10:07:15",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true,
+    "similarity": 0.8263325691223145
+  },
+  {
+    "timestamp": "2026-02-07 11:09:30",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.5194800496101379
+  },
+  {
+    "timestamp": "2026-02-07 11:11:42",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.010797761380672455
+  },
+  {
+    "timestamp": "2026-02-07 11:13:40",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true,
+    "similarity": 0.8263325691223145
+  },
+  {
+    "timestamp": "2026-02-07 11:14:14",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true,
+    "similarity": 0.7934713363647461
+  },
+  {
+    "timestamp": "2026-02-07 12:23:00",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.07172435522079468
+  },
+  {
+    "timestamp": "2026-02-07 12:42:53",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true,
+    "similarity": 0.7934713363647461
+  },
+  {
+    "timestamp": "2026-02-07 12:43:57",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true,
+    "similarity": 0.7934713363647461
+  },
+  {
+    "timestamp": "2026-02-07 12:44:39",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.05617382004857063
+  },
+  {
+    "timestamp": "2026-02-07 13:26:49",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.0005862357211299241
+  },
+  {
+    "timestamp": "2026-02-08 18:31:54",
+    "type": "kyc",
+    "status": "approved",
+    "reason": "approved",
+    "duplicate": false,
+    "liveness": true,
+    "similarity": 0.8263325691223145
+  },
+  {
+    "timestamp": "2026-02-08 18:32:30",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.05617382004857063
+  },
+  {
+    "timestamp": "2026-02-08 18:33:09",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true,
+    "similarity": 0.8263325691223145
+  },
+  {
+    "timestamp": "2026-02-08 18:35:48",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": 0.07734178006649017
+  },
+  {
+    "timestamp": "2026-02-08 22:33:28",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "duplicate identity",
+    "duplicate": true,
+    "liveness": true,
+    "similarity": 0.7934713363647461
+  },
+  {
+    "timestamp": "2026-02-08 23:02:31",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": -0.03498825058341026,
+    "ai_probability": 0.302
+  },
+  {
+    "timestamp": "2026-02-08 23:16:09",
+    "type": "kyc",
+    "status": "rejected",
+    "reason": "identity mismatch",
+    "similarity": -0.03498825058341026,
+    "ai_probability": 0.496
+  }
+]

@@ -17,6 +17,7 @@ from app.services.similarity import (
 )
 from app.services.video_processing import extract_frames
 from app.services.active_liveness import active_liveness_from_video
+from app.services.ai_image_detector import ai_generated_image_score
 
 from app.decision.decision_engine import decide
 from app.db.vector_store import (
@@ -28,6 +29,7 @@ from app.db.vector_store import (
 
 from app.admin.attempt_logger import log_attempt
 from app.utils.logger import log
+
 
 router = APIRouter(prefix="/kyc", tags=["KYC"])
 
@@ -80,7 +82,7 @@ async def verify(
             return {"status": "error", "reason": "invalid session"}
 
         # =================================================
-        # SELFIE → embedding
+        # SELFIE → READ IMAGE
         # =================================================
         selfie_frame = await read_image(image)
 
@@ -88,7 +90,41 @@ async def verify(
             log_attempt({"type": "kyc", "status": "rejected", "reason": "invalid image"})
             return {"status": "rejected", "reason": "invalid image"}
 
-        selfie_embedding = await asyncio.to_thread(get_embedding, selfie_frame)
+        # =================================================
+        # AI-GENERATED IMAGE DETECTION
+        # =================================================
+        ai_prob = await asyncio.to_thread(
+            ai_generated_image_score,
+            selfie_frame
+        )
+
+        AI_IMAGE_REJECT_THRESHOLD = 0.65
+        IDENTITY_THRESHOLD = 0.70  # default
+
+        if ai_prob > AI_IMAGE_REJECT_THRESHOLD:
+            log_attempt({
+                "type": "kyc",
+                "status": "rejected",
+                "reason": "ai_generated_selfie",
+                "ai_probability": round(ai_prob, 3)
+            })
+            return {
+                "status": "rejected",
+                "reason": "ai-generated selfie detected",
+                "ai_probability": round(ai_prob, 3)
+            }
+
+        # soft-risk tightening (your edit)
+        if 0.45 < ai_prob < 0.65:
+            IDENTITY_THRESHOLD = 0.75
+
+        # =================================================
+        # SELFIE → EMBEDDING
+        # =================================================
+        selfie_embedding = await asyncio.to_thread(
+            get_embedding,
+            selfie_frame
+        )
 
         if selfie_embedding is None:
             log_attempt({"type": "kyc", "status": "rejected", "reason": "encoding failed"})
@@ -102,61 +138,68 @@ async def verify(
             tmp.write(contents)
             video_path = tmp.name
 
-        # =================================================
-        # ACTIVE LIVENESS
-        # =================================================
-        liveness_result = await asyncio.to_thread(active_liveness_from_video, video_path)
-        print("Active liveness result:", liveness_result)
+        try:
+            # =================================================
+            # ACTIVE LIVENESS
+            # =================================================
+            liveness_result = await asyncio.to_thread(
+                active_liveness_from_video,
+                video_path
+            )
 
-        if not liveness_result.get("is_live", False):
-            os.remove(video_path)
-            log_attempt({
-                "type": "kyc",
-                "status": "rejected",
-                "reason": "liveness failed",
-                "metrics": liveness_result
-            })
-            return {"status": "rejected", "reason": "liveness failed"}
+            if not liveness_result.get("is_live", False):
+                log_attempt({
+                    "type": "kyc",
+                    "status": "rejected",
+                    "reason": "liveness failed",
+                    "metrics": liveness_result
+                })
+                return {"status": "rejected", "reason": "liveness failed"}
+
+            # =================================================
+            # FRAME EXTRACTION
+            # =================================================
+            frames = await asyncio.to_thread(
+                extract_frames,
+                video_path
+            )
+
+            if not frames:
+                return {"status": "rejected", "reason": "video processing failed"}
+
+        finally:
+            if os.path.exists(video_path):
+                os.remove(video_path)
 
         # =================================================
-        # FRAME EXTRACTION
-        # =================================================
-        frames = await asyncio.to_thread(extract_frames, video_path)
-        os.remove(video_path)
-
-        if not frames:
-            return {"status": "rejected", "reason": "video processing failed"}
-
-        # =================================================
-        # IDENTITY MATCH — multi-frame averaging
+        # IDENTITY MATCH — MULTI-FRAME AVERAGING
         # =================================================
         scores = []
+
         for frame in frames:
             video_emb = await asyncio.to_thread(get_embedding, frame)
             if video_emb is None:
                 continue
 
-            match, score = await asyncio.to_thread(
+            _, score = await asyncio.to_thread(
                 verify_identity_match,
                 selfie_embedding,
                 video_emb
             )
-            print("Identity score:", score)
             scores.append(score)
 
         if not scores:
             return {"status": "rejected", "reason": "identity check failed"}
 
         avg_score = sum(scores) / len(scores)
-        print("Average identity score:", avg_score)
 
-        IDENTITY_THRESHOLD = 0.70
         if avg_score < IDENTITY_THRESHOLD:
             log_attempt({
                 "type": "kyc",
                 "status": "rejected",
                 "reason": "identity mismatch",
-                "similarity": float(avg_score)
+                "similarity": float(avg_score),
+                "ai_probability": round(ai_prob, 3)
             })
             return {
                 "status": "rejected",
@@ -167,13 +210,19 @@ async def verify(
         # =================================================
         # DUPLICATE CHECK
         # =================================================
-        duplicate = await asyncio.to_thread(check_duplicate, selfie_embedding)
+        duplicate = await asyncio.to_thread(
+            check_duplicate,
+            selfie_embedding
+        )
+
         decision = decide(True, duplicate)
 
         if decision["status"] == "approved":
             store_face(selfie_frame, selfie_embedding)
 
         decision["active_liveness"] = liveness_result
+        decision["ai_probability"] = round(ai_prob, 3)
+        decision["similarity"] = float(avg_score)
 
         # =================================================
         # AUDIT LOG
@@ -184,13 +233,13 @@ async def verify(
             "reason": decision.get("reason", "approved"),
             "duplicate": duplicate,
             "liveness": True,
-            "similarity": float(avg_score)
+            "similarity": float(avg_score),
+            "ai_probability": round(ai_prob, 3)
         })
 
         return decision
 
     except Exception as e:
-        print("KYC PIPELINE ERROR:", e)
         log(f"KYC verify error: {e}")
         log_attempt({
             "type": "kyc",
@@ -198,7 +247,6 @@ async def verify(
             "reason": "pipeline exception"
         })
         return {"status": "error", "reason": "verification failed"}
-
 
 # =====================================================
 # SEARCH

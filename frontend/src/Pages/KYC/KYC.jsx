@@ -99,7 +99,11 @@ const KYC = () => {
   // Show Result component while loading or after submission
   if (loading)
     return (
-      <Result loading={true} message={resultData} videoPreview={videoPreview} />
+      <Result
+        loading={true}
+        message="Submitting your KYC..."
+        videoPreview={videoPreview}
+      />
     );
 
   if (submitted) {
