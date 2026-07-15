@@ -49,30 +49,6 @@
 
 ---
 
-## 🏗️ Architecture
-
-┌─────────────────┐ ┌─────────────────────────────────────────┐
-│ React Frontend │────▶│ FastAPI Backend │
-│ (Vite + MUI) │ │ ┌─────────┐ ┌─────────┐ ┌─────────┐ │
-└─────────────────┘ │ │ Security│ │ KYC │ │ Admin │ │
-│ │ Layer │ │ Pipeline│ │ Routes │ │
-│ │(Auth, │ │(Vision, │ │(Stats, │ │
-│ │Rate Lim,│ │Decision,│ │Logs) │ │
-│ │Sessions) │ │Store) │ │ │ │
-│ └────┬────┘ └────┬────┘ └─────────┘ │
-│ └────────────┘ │
-│ │ │
-│ ┌───────────┴────────────┐ │
-│ │ ML/AI Services │ │
-│ │ • InsightFace (embed) │ │
-│ │ • MediaPipe (liveness) │ │
-│ │ • Transformers (AI-detect)│ │
-│ │ • OpenCV (quality) │ │
-│ └──────────────────────────┘ │
-└─────────────────────────────────────────┘
-
----
-
 ## 🛠️ Tech Stack
 
 ### Backend
